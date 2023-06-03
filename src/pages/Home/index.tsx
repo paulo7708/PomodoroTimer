@@ -1,6 +1,9 @@
 import { HandPalm, Play } from "phosphor-react";
-import { useEffect, useState } from "react";
-import { differenceInSeconds } from 'date-fns'
+import { useState, createContext } from "react";
+import { FormProvider, useForm } from "react-hook-form"
+import * as zod from 'zod'
+import { zodResolver } from "@hookform/resolvers/zod"
+
 import {
   HomeContainer,
   StartCountdownButton,
@@ -8,8 +11,6 @@ import {
 } from "./styles";
 import { CountDown } from "./components/Countdown";
 import { NewCycleForm } from "./components/NewCycleForm";
-
-
 
 
 interface Cycle {
@@ -21,27 +22,57 @@ interface Cycle {
   finishedDate?: Date,
 }
 
+interface CyclesContextType {
+  activeCycle: Cycle | undefined;
+  activeCycleId: string | null;  
+  amountSecondPassed: number;
+  markCurrentCycleAsFinished: () => void;
+  setSecondsPassed: ( seconds: number ) => void;
+}
+
+export const CyclesContext = createContext({} as CyclesContextType)
 
 export function Home() {
   const [cycles, setCycles] = useState<Cycle[]>([])
   const [activeCycleId, setActiveCycleId] = useState<string | null>(null)
-  
 
-  
+  const [amountSecondPassed, setAmountSecondPassed] = useState(0)
+
+  const newCycleFormValidationSchema = zod.object({
+    task: zod.string().min(1, 'Informe a tarefa'),
+    minutesAmount: zod.number().min(1).max(60),
+  })
+
+  type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>
+
+  const newCycleForm = useForm<NewCycleFormData>({
+    resolver: zodResolver(newCycleFormValidationSchema),
+    defaultValues: {
+      task: '',
+      minutesAmount: 0,
+    }
+  })
+
+  const { handleSubmit, watch, reset } = newCycleForm
+
+  function setSecondsPassed(seconds: number){
+    setAmountSecondPassed(seconds)
+  }
+
+  function markCurrentCycleAsFinished() {
+    setCycles((state) =>
+      state.map(cycle => {
+        if (cycle.id === activeCycleId) {
+          return { ...cycle, finishedDate: new Date() }
+        } else {
+          return cycle
+        }
+      }),
+    )
+  }
+
 
   const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId)
-
-  
-  const currentSeconds = activeCycle ? totalSeconds - amountSecondPassed : 0
-
-  const minutesAmount = Math.floor(currentSeconds / 60)
-  const secondsAmount = currentSeconds % 60
-
-  const minutes = String(minutesAmount).padStart(2, '0')
-  const seconds = String(secondsAmount).padStart(2, '0')
-
-
-  
 
   function handleCreateNewCycle(data: NewCycleFormData) {
     console.log(data)
@@ -76,45 +107,38 @@ export function Home() {
     setActiveCycleId(null)
   }
 
-
-  useEffect(() => {
-    if (activeCycle) {
-      document.title = `${minutes + ' : ' + seconds}`
-    }
-
-  }, [minutes, seconds, activeCycle])
-
-
   const task = watch('task')
   const isSubmitDisabled = !task
 
 
   return (
-    <HomeContainer>
-      <form onSubmit={handleSubmit(handleCreateNewCycle)}>
+    <CyclesContext.Provider
+      value={{
+        activeCycle, activeCycleId, markCurrentCycleAsFinished, amountSecondPassed, setSecondsPassed
+      }}>
+      <HomeContainer>
+        <form onSubmit={handleSubmit(handleCreateNewCycle)}>
+          <FormProvider {...newCycleForm}>
+            <NewCycleForm />
+          </FormProvider>
 
-        <NewCycleForm />
-        <CountDown
-          activeCycle={activeCycle}
-          setCycles={setCycles}
-          activeCycleId={activeCycleId}
-        />
+          <CountDown />
 
-        {activeCycle ? (
-          <StopCountdownButton onClick={handleInterruptCycle} type="button">
-            <HandPalm size={24} />
-            Interromper
-          </StopCountdownButton>
-        ) : (
-          <StartCountdownButton disabled={isSubmitDisabled} type="submit">
-            <Play size={24} />
-            Começar
-          </StartCountdownButton>
+          {activeCycle ? (
+            <StopCountdownButton onClick={handleInterruptCycle} type="button">
+              <HandPalm size={24} />
+              Interromper
+            </StopCountdownButton>
+          ) : (
+            <StartCountdownButton disabled={isSubmitDisabled} type="submit">
+              <Play size={24} />
+              Começar
+            </StartCountdownButton>
 
-        )}
-      </form>
+          )}
+        </form>
 
-
-    </HomeContainer>
+      </HomeContainer>
+    </CyclesContext.Provider>
   );
 }
