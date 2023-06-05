@@ -1,5 +1,6 @@
 import { ReactNode, createContext, useReducer, useState } from 'react'
-import { Cycle, cyclesReducer } from '../reducers/cycles';
+import { Cycle, cyclesReducer } from '../reducers/cycles/reducers';
+import { addNewCycleAction, interruptCurrentCycleAction, markCurrentCycleAsFinishedAction } from '../reducers/cycles/actions';
 
 interface CreateCycleData {
   task: string
@@ -26,7 +27,6 @@ interface CyclesContextProviderProps {
 }
 
 
-
 export const CyclesContextProvider = ({ children }: CyclesContextProviderProps) => {
   const [cyclesState, dispatch] = useReducer(cyclesReducer,
     {
@@ -44,12 +44,7 @@ export const CyclesContextProvider = ({ children }: CyclesContextProviderProps) 
   }
 
   function markCurrentCycleAsFinished() {
-    dispatch({
-      type: 'MARK_CURRENT_CYCLE_AS_FINISHED',
-      payload: {
-        activeCycleId,
-      },
-    })
+    dispatch( markCurrentCycleAsFinishedAction() )
     // setCycles((state) =>
     //   state.map(cycle => {
     //     if (cycle.id === activeCycleId) {
@@ -72,12 +67,7 @@ export const CyclesContextProvider = ({ children }: CyclesContextProviderProps) 
       startDate: new Date(),
     }
 
-    dispatch({
-      type: 'ADD_NEW_CYCLE',
-      payload: {
-        newCycle,
-      },
-    })
+    dispatch(addNewCycleAction(newCycle))
 
     //setCycles((state) => [...state, newCycle])
     setAmountSecondPassed(0)
@@ -85,12 +75,7 @@ export const CyclesContextProvider = ({ children }: CyclesContextProviderProps) 
   }
 
   function interruptCurrentCycle() {
-    dispatch({
-      type: 'INTERRUPT_CURRENT_CYCLE',
-      payload: {
-        activeCycleId,
-      },
-    })
+    dispatch(interruptCurrentCycleAction())
 
     // setCycles((state) =>
     //   state.map(cycle => {
