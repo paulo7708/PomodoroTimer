@@ -7,8 +7,6 @@ interface CreateCycleData {
   minutesAmount: number
 }
 
-
-
 interface CyclesContextType {
   cycles: Cycle[];
   activeCycle: Cycle | undefined;
