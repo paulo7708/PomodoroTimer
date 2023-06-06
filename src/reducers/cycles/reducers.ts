@@ -22,6 +22,7 @@ export function cyclesReducer(state: CyclesState, action: any) {
     case ActionTypes.ADD_NEW_CYCLE:
       return produce(state, draft => {
         draft.cycles.push(action.payload.newCycle)
+        draft.activeCycleId = action.payload.newCycle.id
       })
     // return { //imutavel sem immer/ padrão react
     //   ...state,
